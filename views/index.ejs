@@ -1,7 +1,17 @@
 <!doctype html>
 <html lang="en">
-    <%- include('partials/_head', { title: 'Home page' }) %>
+    <%- include('partials/_head', { title: 'Home' }); %>
     <body>
-        <h1>Hello world</h1>
+        <h1>Tweets</h1>
+        <div class="tweets">
+            <% tweets.forEach(tweet => { %>
+                <div class="tweet">
+                    <span class="tweet_username"><%= tweet.username %></span>
+                    <span class="tweet_text"><%= tweet.text %></span>
+                    <span class="tweet_date"><%= formatISO(tweet.createdAt) %></span>
+                </div>
+                <hr/>
+            <% }); %>
+        </div>
     </body>
 </html>
