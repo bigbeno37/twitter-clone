@@ -2,6 +2,7 @@
 <html lang="en">
     <%- include('partials/_head', { title: 'Home' }); %>
     <body>
+        <%- include('partials/_navbar'); %>
         <h1>Tweets</h1>
         <div class="tweets">
             <% tweets.forEach(tweet => { %>
