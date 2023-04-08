@@ -1,5 +1,5 @@
 import express from 'express';
-import {formatISO, compareDesc} from 'date-fns';
+import { compareDesc, format } from 'date-fns';
 const app = express();
 
 // TODO: Remove hardcoded test data and generate these types from Zod schemas
@@ -61,11 +61,10 @@ app.use('/static', express.static('static'));
 
 app.use((req, res, next) => {
     // Add formatISO as a local for EJS templates
-    res.locals['formatISO'] = formatISO;
+    res.locals['format'] = format;
     next();
 });
 
-// A GET route for root, that returns the string Hello World!
 app.get('/', (req, res) => {
     const sortedTweets = TWEETS.sort((a, b) => compareDesc(a.createdAt, b.createdAt));
 
