@@ -44,7 +44,7 @@
 
 .container {
     max-width: var(--container-width);
-    margin: 0 auto;
+    margin: 2rem auto 0 auto;
 }
 
 .tweets {
@@ -63,4 +63,18 @@
 
 .tweet_text {
     font-size: 1.15rem;
+}
+
+.new_tweet {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.new_tweet > label {
+    display: none;
+}
+
+.new_tweet textarea {
+    /* */
 }

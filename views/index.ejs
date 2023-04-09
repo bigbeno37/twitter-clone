@@ -4,6 +4,12 @@
     <body>
         <%- include('partials/_navbar'); %>
         <div class="container">
+            <!-- Form with a single textbox field with a placeholder "Tweet to the world!" in addition to a "Post" button that POSTs to /tweet -->
+            <form action="/tweet" method="POST" class="new_tweet">
+                <label>Tweet:</label>
+                <textarea required placeholder="Tweet to the world!" rows="5"></textarea>
+                <button type="submit">Post</button>
+            </form>
             <div class="tweets">
                 <% tweets.forEach(tweet => { %>
                     <div class="tweet">
