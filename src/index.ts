@@ -59,6 +59,12 @@ app.set('view engine', 'ejs');
 
 app.use('/static', express.static('static'));
 
+app.use(express.urlencoded({ extended: true }));
+
+const getSortedTweets = () => {
+    return TWEETS.sort((a, b) => compareDesc(a.createdAt, b.createdAt));
+};
+
 app.use((req, res, next) => {
     // Add formatISO as a local for EJS templates
     res.locals['format'] = format;
@@ -66,9 +72,19 @@ app.use((req, res, next) => {
 });
 
 app.get('/', (req, res) => {
-    const sortedTweets = TWEETS.sort((a, b) => compareDesc(a.createdAt, b.createdAt));
+    res.render('index', { tweets: getSortedTweets() });
+});
 
-    res.render('index', { tweets: sortedTweets });
+app.post('/tweet', (req, res) => {
+    const tweet = req.body?.tweet;
+
+    if (!tweet) {
+        return res.render('index', { tweets: getSortedTweets(), error: 'Tweet cannot be empty' });
+    }
+
+    TWEETS.push({ id: '5', username: 'user1', createdAt: new Date(), text: tweet });
+
+    res.redirect('/');
 });
 
 // Run the server on port 3000
