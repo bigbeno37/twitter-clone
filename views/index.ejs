@@ -6,8 +6,8 @@
         <div class="container">
             <!-- Form with a single textbox field with a placeholder "Tweet to the world!" in addition to a "Post" button that POSTs to /tweet -->
             <form action="/tweet" method="POST" class="new_tweet">
-                <label>Tweet:</label>
-                <textarea required placeholder="Tweet to the world!" rows="5" name="tweet"></textarea>
+                <label for="tweet_textarea">Tweet:</label>
+                <textarea required id="tweet_textarea" placeholder="Tweet to the world!" rows="5" name="tweet"></textarea>
                 <button type="submit">Post</button>
             </form>
             <div class="tweets">
