@@ -110,6 +110,10 @@ app.post('/tweet', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
+    if (res.locals['username']) {
+        return res.redirect('/');
+    }
+
     res.render('register');
 });
 
