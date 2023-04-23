@@ -114,6 +114,10 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
+    if (res.locals['username']) {
+        return res.redirect('/');
+    }
+
     try {
         // Validate user input
         const { username, password, confirmPassword } = req.body;
