@@ -1,8 +1,9 @@
 import express from 'express';
-import { compareDesc, format } from 'date-fns';
+import {add, compareDesc, format, isPast} from 'date-fns';
 import * as argon2 from "argon2";
 import {nanoid} from "nanoid";
 import cookieParser from "cookie-parser";
+import type {Response} from "express";
 
 const app = express();
 
@@ -18,6 +19,7 @@ const USERS: User[] = [];
 type AuthToken = {
     token: string;
     username: string;
+    expiry: Date;
 };
 
 const AUTH_TOKENS: AuthToken[] = [];
@@ -57,13 +59,14 @@ type TweetLike = {
 
 const TWEET_LIKES: TweetLike[] = [];
 
+const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30;
+
 // Set EJS as the view engine
 app.set('view engine', 'ejs');
 
-app.use('/static', express.static('static'));
-
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use('/static', express.static('static'));
 
 const getSortedTweets = () => {
     return TWEETS.sort((a, b) => compareDesc(a.createdAt, b.createdAt));
@@ -75,17 +78,30 @@ app.use((req, res, next) => {
     next();
 });
 
+const clearAuthToken = (res: Response) => {
+    res.clearCookie('authToken');
+};
+
 app.use((req, res, next) => {
     // Middleware that checks AUTH_TOKENS for a valid token from the authToken cookie in the request
     const authToken = req.cookies?.authToken;
-
-    if (authToken) {
-        const username = AUTH_TOKENS.find(u => u.token === authToken)?.username;
-
-        if (username) {
-            res.locals['username'] = username;
-        }
+    if (!authToken) {
+        return next();
     }
+
+    const token = AUTH_TOKENS.find(u => u.token === authToken);
+    if (!token) {
+        clearAuthToken(res);
+        return next();
+    }
+
+    const expiry = token.expiry;
+    if (isPast(expiry)) {
+        clearAuthToken(res);
+        return next();
+    }
+
+    res.locals['username'] = token.username;
 
     next();
 });
@@ -137,10 +153,10 @@ app.post('/register', async (req, res) => {
 
         const token = nanoid();
 
-        AUTH_TOKENS.push({ token, username });
+        AUTH_TOKENS.push({ token, username, expiry: add(new Date(), { days: 30 }) });
 
         // Set the auth token in a cookie
-        res.cookie('authToken', token, { httpOnly: true });
+        res.cookie('authToken', token, { httpOnly: true, maxAge: THIRTY_DAYS });
 
         res.redirect('/');
     } catch (error) {
@@ -175,10 +191,10 @@ app.post('/login', async (req, res) => {
     if (user && passwordMatchesHash) {
         const token = nanoid();
 
-        AUTH_TOKENS.push({ token, username });
+        AUTH_TOKENS.push({ token, username, expiry: add(new Date(), { days: 30 }) });
 
         // Set the auth token in a cookie
-        res.cookie('authToken', token, { httpOnly: true });
+        res.cookie('authToken', token, { httpOnly: true, maxAge: remember ? THIRTY_DAYS : undefined });
 
         // If the authentication succeeds, redirect the user to the homepage
         return res.redirect('/');
