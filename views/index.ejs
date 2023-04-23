@@ -3,19 +3,19 @@
     <%- include('partials/_head', { title: 'Home' }); %>
     <body>
         <%- include('partials/_navbar'); %>
-        <div class="container">
+        <div class="w-max-container mx-auto mt-2">
             <!-- Form with a single textbox field with a placeholder "Tweet to the world!" in addition to a "Post" button that POSTs to /tweet -->
-            <form action="/tweet" method="POST" class="new_tweet">
-                <label for="tweet_textarea">Tweet:</label>
+            <form action="/tweet" method="POST" class="flex flex-col gap-1">
+                <label for="tweet_textarea" class="hidden">Tweet:</label>
                 <textarea required id="tweet_textarea" placeholder="Tweet to the world!" rows="5" name="tweet"></textarea>
                 <button type="submit">Post</button>
             </form>
-            <div class="tweets">
+            <div class="flex flex-col gap-1">
                 <% tweets.forEach(tweet => { %>
-                    <div class="tweet">
-                        <span class="tweet_username"><%= tweet.username %></span>
-                        <span class="tweet_text"><%= tweet.text %></span>
-                        <span class="tweet_date"><%= format(tweet.createdAt, 'yyyy-MM-dd HH:mm') %></span>
+                    <div class="p-1 flex flex-col">
+                        <span><%= tweet.username %></span>
+                        <span class="text-lg"><%= tweet.text %></span>
+                        <span><%= format(tweet.createdAt, 'yyyy-MM-dd HH:mm') %></span>
                     </div>
                 <% }); %>
             </div>
