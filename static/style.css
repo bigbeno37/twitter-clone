@@ -88,3 +88,27 @@
 .hover\:underline:hover {
     text-decoration: underline;
 }
+
+.bg-error {
+    background-color: #ffd3d0;
+}
+
+.border {
+    border-width: 1px;
+}
+
+.border-solid {
+    border-style: solid;
+}
+
+.border-error {
+    border-color: #b43027;
+}
+
+.rounded {
+    border-radius: 0.25rem;
+}
+
+.error {
+    color: #b43027;
+}
