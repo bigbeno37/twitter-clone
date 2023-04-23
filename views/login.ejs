@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+    <%- include('partials/_head', { title: 'Login' }); %>
+    <body>
+        <%- include('partials/_navbar'); %>
+        <div class="w-max-container mx-auto mt-2 flex flex-col gap-2">
+            <% if(locals.errorMessage) { %>
+                <div class="bg-error p-1 error border border-solid border-error rounded">
+                    <%= errorMessage %>
+                </div>
+            <% } %>
+
+            <form action="/login" method="post" class="flex flex-col gap-1">
+                <div class="flex flex-col">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+
+                <div class="flex flex-col">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <div>
+                    <label for="remember">Remember me?</label>
+                    <input type="checkbox" id="remember" name="remember" value="1">
+                </div>
+
+                <input type="submit" value="Log in">
+            </form>
+        </div>
+    </body>
+</html>

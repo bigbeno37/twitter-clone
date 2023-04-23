@@ -10,7 +10,7 @@ const app = express();
 type User = {
     username: string;
     createdAt: Date;
-    password: string;
+    passwordHash: string;
 };
 
 const USERS: User[] = [];
@@ -79,11 +79,8 @@ app.use((req, res, next) => {
     // Middleware that checks AUTH_TOKENS for a valid token from the authToken cookie in the request
     const authToken = req.cookies?.authToken;
 
-    console.log('auth token', authToken);
-
     if (authToken) {
         const username = AUTH_TOKENS.find(u => u.token === authToken)?.username;
-        console.log('username', username);
 
         if (username) {
             res.locals['username'] = username;
@@ -136,7 +133,7 @@ app.post('/register', async (req, res) => {
         const hashedPassword = await argon2.hash(password);
 
         // Store the user in your database
-        USERS.push({ username, createdAt: new Date(), password: hashedPassword });
+        USERS.push({ username, createdAt: new Date(), passwordHash: hashedPassword });
 
         const token = nanoid();
 
@@ -155,6 +152,40 @@ app.post('/register', async (req, res) => {
 app.get('/logout', (req, res) => {
     res.clearCookie('authToken');
     res.redirect('/');
+});
+
+app.get('/login', (req, res) => {
+    if (res.locals['username']) {
+        return res.redirect('/');
+    }
+
+    res.render('login');
+});
+
+app.post('/login', async (req, res) => {
+    if (res.locals['username']) {
+        return res.redirect('/');
+    }
+
+    const { username, password, remember } = req.body;
+
+    const user = USERS.find(u => u.username === username);
+    const passwordMatchesHash = user && (await argon2.verify(user.passwordHash, password));
+
+    if (user && passwordMatchesHash) {
+        const token = nanoid();
+
+        AUTH_TOKENS.push({ token, username });
+
+        // Set the auth token in a cookie
+        res.cookie('authToken', token, { httpOnly: true });
+
+        // If the authentication succeeds, redirect the user to the homepage
+        return res.redirect('/');
+    } else {
+        // If the authentication fails, render the login template with an error message
+        return res.render('login', { errorMessage: 'Invalid username or password' });
+    }
 });
 
 // Run the server on port 3000
