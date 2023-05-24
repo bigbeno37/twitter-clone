@@ -4,9 +4,9 @@
     <body>
         <%- include('partials/_navbar'); %>
         <div class="w-max-container mx-auto mt-2 flex flex-col gap-2">
-            <% if(locals.errorMessage) { %>
+            <% if(locals.sessionData?.errorMessage) { %>
                 <div class="bg-error p-1 error border border-solid border-error rounded">
-                    <%= errorMessage %>
+                    <%= locals.sessionData.errorMessage %>
                 </div>
             <% } %>
 

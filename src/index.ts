@@ -1,4 +1,4 @@
-import express from 'express';
+import express, {RequestHandler} from 'express';
 import {add, compareDesc, format, isPast} from 'date-fns';
 import * as argon2 from "argon2";
 import {nanoid} from "nanoid";
@@ -16,13 +16,14 @@ type User = {
 
 const USERS: User[] = [];
 
-type AuthToken = {
+type UserSession = {
     token: string;
     username: string;
     expiry: Date;
+    sessionData: Record<string, any>;
 };
 
-const AUTH_TOKENS: AuthToken[] = [];
+const USER_SESSIONS: UserSession[] = [];
 
 type UserFollow = {
     username: string;
@@ -61,6 +62,18 @@ const TWEET_LIKES: TweetLike[] = [];
 
 const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30;
 
+declare global {
+    namespace Express {
+        interface Request {
+            session?: {
+                username: string;
+
+                sessionData: Record<string, any>;
+            };
+        }
+    }
+}
+
 // Set EJS as the view engine
 app.set('view engine', 'ejs');
 
@@ -72,36 +85,42 @@ const getSortedTweets = () => {
     return TWEETS.sort((a, b) => compareDesc(a.createdAt, b.createdAt));
 };
 
+const requestIsAuthenticated = (req: express.Request) => {
+    return !!req.session?.username;
+};
+
 app.use((req, res, next) => {
-    // Add formatISO as a local for EJS templates
     res.locals['format'] = format;
+
     next();
 });
+
+// ============= PUBLIC ROUTES =============
 
 const clearAuthToken = (res: Response) => {
     res.clearCookie('authToken');
 };
 
 app.use((req, res, next) => {
-    // Middleware that checks AUTH_TOKENS for a valid token from the authToken cookie in the request
     const authToken = req.cookies?.authToken;
     if (!authToken) {
         return next();
     }
 
-    const token = AUTH_TOKENS.find(u => u.token === authToken);
-    if (!token) {
+    const session = USER_SESSIONS.find(u => u.token === authToken);
+    if (!session) {
         clearAuthToken(res);
         return next();
     }
 
-    const expiry = token.expiry;
+    const expiry = session.expiry;
     if (isPast(expiry)) {
         clearAuthToken(res);
         return next();
     }
 
-    res.locals['username'] = token.username;
+    req.session = session;
+    res.locals['session'] = req.session;
 
     next();
 });
@@ -110,31 +129,52 @@ app.get('/', (req, res) => {
     res.render('index', { tweets: getSortedTweets() });
 });
 
-app.post('/tweet', (req, res) => {
+// ================== AUTHENTICATED ROUTES ==================
+
+const isAuthenticated: RequestHandler = (req, res, next) => {
+    // Check to see if session exists
+    if (!requestIsAuthenticated(req)) {
+        return res.redirect('/login');
+    }
+
+    // Otherwise, proceed as normal
+    next();
+};
+
+app.post('/tweet', isAuthenticated, (req, res) => {
     const tweet = req.body?.tweet;
 
     if (!tweet) {
         return res.render('index', { tweets: getSortedTweets(), error: 'Tweet cannot be empty' });
     }
 
-    TWEETS.push({ id: '5', username: 'user1', createdAt: new Date(), text: tweet });
+    TWEETS.push({ id: TWEETS.length+1+'', username: req.session?.username!, createdAt: new Date(), text: tweet });
 
     res.redirect('/');
 });
 
-app.get('/register', (req, res) => {
-    if (res.locals['username']) {
+app.get('/logout', isAuthenticated, (req, res) => {
+    res.clearCookie('authToken');
+    res.redirect('/');
+});
+
+// ================== UNAUTHENTICATED-ONLY ROUTES ==================
+
+const isNotAuthenticated: RequestHandler = (req, res, next) => {
+    // Check to see if session exists
+    if (requestIsAuthenticated(req)) {
         return res.redirect('/');
     }
 
+    // Otherwise, proceed as normal
+    next();
+};
+
+app.get('/register', isNotAuthenticated, (req, res) => {
     res.render('register');
 });
 
-app.post('/register', async (req, res) => {
-    if (res.locals['username']) {
-        return res.redirect('/');
-    }
-
+app.post('/register', isNotAuthenticated, async (req, res) => {
     try {
         // Validate user input
         const { username, password, confirmPassword } = req.body;
@@ -153,7 +193,7 @@ app.post('/register', async (req, res) => {
 
         const token = nanoid();
 
-        AUTH_TOKENS.push({ token, username, expiry: add(new Date(), { days: 30 }) });
+        USER_SESSIONS.push({ token, username, expiry: add(new Date(), { days: 30 }), sessionData: {} });
 
         // Set the auth token in a cookie
         res.cookie('authToken', token, { httpOnly: true, maxAge: THIRTY_DAYS });
@@ -165,24 +205,11 @@ app.post('/register', async (req, res) => {
     }
 });
 
-app.get('/logout', (req, res) => {
-    res.clearCookie('authToken');
-    res.redirect('/');
+app.get('/login', isNotAuthenticated, (req, res) => {
+    return res.render('login');
 });
 
-app.get('/login', (req, res) => {
-    if (res.locals['username']) {
-        return res.redirect('/');
-    }
-
-    res.render('login');
-});
-
-app.post('/login', async (req, res) => {
-    if (res.locals['username']) {
-        return res.redirect('/');
-    }
-
+app.post('/login', isNotAuthenticated, async (req, res) => {
     const { username, password, remember } = req.body;
 
     const user = USERS.find(u => u.username === username);
@@ -191,7 +218,7 @@ app.post('/login', async (req, res) => {
     if (user && passwordMatchesHash) {
         const token = nanoid();
 
-        AUTH_TOKENS.push({ token, username, expiry: add(new Date(), { days: 30 }) });
+        USER_SESSIONS.push({ token, username, expiry: add(new Date(), { days: 30 }), sessionData: {} });
 
         // Set the auth token in a cookie
         res.cookie('authToken', token, { httpOnly: true, maxAge: remember ? THIRTY_DAYS : undefined });
