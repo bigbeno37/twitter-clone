@@ -1,6 +1,12 @@
 import * as dotenv from 'dotenv';
-import {Client, QueryResult} from "pg";
+// @ts-ignore
+import type {Client, QueryResult} from "pg";
+// @ts-ignore
+import pg from "pg";
+
 dotenv.config();
+
+const { Client } = pg;
 
 type Migration = {
     version: string;
