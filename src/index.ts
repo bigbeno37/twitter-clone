@@ -47,7 +47,6 @@ declare global {
 
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser());
-    app.use('/static', express.static('static'));
 
     const requestIsAuthenticated = (req: express.Request) => {
         return !!req.session?.username;
@@ -103,13 +102,17 @@ declare global {
             .catch(console.error);
     });
 
+    const router = express.Router();
+
+    router.use('/static', express.static('static'));
+
     const getSortedTweets = () => {
         return client
             .query<{ username: string, text: string, createdat: Date }>('SELECT username, text, createdAt FROM Tweet ORDER BY createdAt DESC')
             .then(result => result.rows);
     };
 
-    app.get('/', (req, res) => {
+    router.get('/', (req, res) => {
         getSortedTweets().then(tweets => {
             res.render('index', { tweets });
         });
@@ -127,7 +130,7 @@ declare global {
         next();
     };
 
-    app.post('/tweet', isAuthenticated, (req, res) => {
+    router.post('/tweet', isAuthenticated, (req, res) => {
         const tweet = req.body?.tweet;
 
         if (!tweet) {
@@ -142,7 +145,7 @@ declare global {
         res.redirect('/');
     });
 
-    app.get('/logout', isAuthenticated, (req, res) => {
+    router.get('/logout', isAuthenticated, (req, res) => {
         res.clearCookie('authToken');
         res.redirect('/');
     });
@@ -159,11 +162,11 @@ declare global {
         next();
     };
 
-    app.get('/register', isNotAuthenticated, (req, res) => {
+    router.get('/register', isNotAuthenticated, (req, res) => {
         res.render('register');
     });
 
-    app.post('/register', isNotAuthenticated, async (req, res) => {
+    router.post('/register', isNotAuthenticated, async (req, res) => {
         try {
             // Validate user input
             const { username, password, confirmPassword } = req.body;
@@ -202,11 +205,11 @@ declare global {
         }
     });
 
-    app.get('/login', isNotAuthenticated, (req, res) => {
+    router.get('/login', isNotAuthenticated, (req, res) => {
         return res.render('login');
     });
 
-    app.post('/login', isNotAuthenticated, async (req, res) => {
+    router.post('/login', isNotAuthenticated, async (req, res) => {
         const { username, password, remember } = req.body;
 
         const user = await client.query<{ passwordhash: string }>('SELECT passwordHash FROM Account WHERE username = $1', [username])
@@ -236,6 +239,8 @@ declare global {
             return res.render('login', { errorMessage: 'Invalid username or password' });
         }
     });
+
+    app.use(process.env['BASE_PATH']!, router);
 
     app.listen(3000, () => {
         evLogger.info('Server running on port 3000...');
