@@ -10,6 +10,10 @@ import {nanoid} from "nanoid";
 import cookieParser from "cookie-parser";
 import type {Response} from "express";
 import {Client} from 'pg';
+import pino from 'pino';
+
+const evLogger = pino({ name: 'event' });
+const reqLogger = pino({ name: 'request' });
 
 const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30;
 
@@ -19,7 +23,7 @@ declare global {
             session?: {
                 username: string;
 
-                sessionData: Record<string, any>;
+                sessiondata: Record<string, any>;
             };
         }
     }
@@ -27,8 +31,12 @@ declare global {
 
 // TODO: Check if I can use top level await. This works for now.
 (async () => {
+    evLogger.info('Starting server...');
+
     const client = new Client();
     await client.connect();
+
+    evLogger.info('Connected to database! Starting express...');
 
     const app = express();
 
@@ -42,6 +50,15 @@ declare global {
     const requestIsAuthenticated = (req: express.Request) => {
         return !!req.session?.username;
     };
+
+    app.use((req, res, next) => {
+        reqLogger.info({
+            url: req.url,
+            method: req.method
+        });
+
+        next();
+    });
 
     app.use((req, res, next) => {
         res.locals['format'] = format;
@@ -62,7 +79,7 @@ declare global {
         }
 
         client
-            .query<{ username: string, sessionData: Record<string, any>, expiry: Date }>('SELECT username, sessionData, expiry FROM AccountSession WHERE token = $1', [authToken])
+            .query<{ username: string, sessiondata: Record<string, any>, expiry: Date }>('SELECT username, sessionData, expiry FROM AccountSession WHERE token = $1', [authToken])
             .then(result => {
                 const session = result.rows[0] ?? null;
                 if (!session) {
@@ -190,9 +207,9 @@ declare global {
     app.post('/login', isNotAuthenticated, async (req, res) => {
         const { username, password, remember } = req.body;
 
-        const user = await client.query<{ passwordHash: string }>('SELECT passwordHash FROM Account WHERE username = $1', [username])
+        const user = await client.query<{ passwordhash: string }>('SELECT passwordHash FROM Account WHERE username = $1', [username])
             .then(result => result.rows[0] ?? null);
-        const passwordMatchesHash = user && (await argon2.verify(user.passwordHash, password));
+        const passwordMatchesHash = user && (await argon2.verify(user.passwordhash, password));
 
         if (user && passwordMatchesHash) {
             const token = nanoid();
@@ -219,6 +236,6 @@ declare global {
     });
 
     app.listen(3000, () => {
-        console.log('Server is running on port 3000');
+        evLogger.info('Server running on port 3000...');
     });
 })();
