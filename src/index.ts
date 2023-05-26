@@ -63,6 +63,7 @@ declare global {
 
     app.use((req, res, next) => {
         res.locals['format'] = format;
+        res.locals['basePath'] = process.env['BASE_PATH'];
 
         next();
     });
