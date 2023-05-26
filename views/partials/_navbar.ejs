@@ -7,10 +7,10 @@
         <div class="self-end flex gap-2">
             <% if (locals.session?.username) { %>
                 <span class="white">Hello, <%= locals.session.username %></span>
-                <a class="white no-underline hover:underline" href="/logout">Logout</a>
+                <a class="white no-underline hover:underline" href="logout">Logout</a>
             <% } else { %>
-                <a class="white no-underline hover:underline" href="/login">Log In</a>
-                <a class="white no-underline hover:underline" href="/register">Register</a>
+                <a class="white no-underline hover:underline" href="login">Log In</a>
+                <a class="white no-underline hover:underline" href="register">Register</a>
             <% } %>
         </div>
     </div>
