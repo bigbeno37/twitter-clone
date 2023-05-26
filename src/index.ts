@@ -9,8 +9,10 @@ import * as argon2 from "argon2";
 import {nanoid} from "nanoid";
 import cookieParser from "cookie-parser";
 import type {Response} from "express";
-import {Client} from 'pg';
-import pino from 'pino';
+import pg from 'pg';
+import {pino} from 'pino';
+
+const {Client} = pg;
 
 const evLogger = pino({ name: 'event' });
 const reqLogger = pino({ name: 'request' });
