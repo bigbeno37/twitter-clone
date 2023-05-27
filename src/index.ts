@@ -19,7 +19,7 @@ const reqLogger = pino({ name: 'request' });
 
 const THIRTY_DAYS = 1000 * 60 * 60 * 24 * 30;
 
-const BASE_PATH = process.env['BASE_PATH'] ?? '/';
+const path = (p: string) => `${process.env['BASE_PATH'] ?? '/'}${p}`.replace(/\/+/g, '/');
 
 declare global {
     namespace Express {
@@ -65,7 +65,7 @@ declare global {
 
     app.use((req, res, next) => {
         res.locals['format'] = format;
-        res.locals['basePath'] = BASE_PATH;
+        res.locals['path'] = path;
 
         next();
     });
@@ -145,12 +145,12 @@ declare global {
         // TODO: Handle errors here...somehow
         client.query('INSERT INTO Tweet (username, text) VALUES ($1, $2)', [req.session!.username, tweet]);
 
-        res.redirect(BASE_PATH);
+        res.redirect(path('/'));
     });
 
     router.get('/logout', isAuthenticated, (req, res) => {
         res.clearCookie('authToken');
-        res.redirect(BASE_PATH);
+        res.redirect(path('/'));
     });
 
 // ================== UNAUTHENTICATED-ONLY ROUTES ==================
@@ -158,7 +158,7 @@ declare global {
     const isNotAuthenticated: RequestHandler = (req, res, next) => {
         // Check to see if session exists
         if (requestIsAuthenticated(req)) {
-            return res.redirect(BASE_PATH);
+            return res.redirect(path('/'));
         }
 
         // Otherwise, proceed as normal
@@ -201,7 +201,7 @@ declare global {
             // Set the auth token in a cookie
             res.cookie('authToken', token, { httpOnly: true, maxAge: THIRTY_DAYS });
 
-            res.redirect(BASE_PATH);
+            res.redirect(path('/'));
         } catch (error) {
             console.error(error);
             res.render('register', { errorMessage: 'An error occurred while processing your request. Please try again later.' });
@@ -236,14 +236,14 @@ declare global {
             res.cookie('authToken', token, { httpOnly: true, maxAge: remember ? THIRTY_DAYS : undefined });
 
             // If the authentication succeeds, redirect the user to the homepage
-            return res.redirect(BASE_PATH);
+            return res.redirect(path('/'));
         } else {
             // If the authentication fails, render the login template with an error message
             return res.render('login', { errorMessage: 'Invalid username or password' });
         }
     });
 
-    app.use(BASE_PATH, router);
+    app.use(path('/'), router);
 
     app.listen(3000, () => {
         evLogger.info('Server running on port 3000...');

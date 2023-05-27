@@ -6,11 +6,11 @@
         <div class="w-max-container mx-auto mt-2">
             <% if(locals.sessionData?.errorMessage) { %>
                 <div class="bg-error p-1 error border border-solid border-error rounded">
-                    <%= locals.sessionData.errorMessage %>
+                    <%= sessionData.errorMessage %>
                 </div>
             <% } %>
             <% if(locals.session?.username) { %>
-                <form action="tweet" method="POST" class="flex flex-col gap-1">
+                <form action="<%= path('/tweet') %>" method="POST" class="flex flex-col gap-1">
                     <label for="tweet_textarea" class="hidden">Tweet:</label>
                     <textarea required id="tweet_textarea" placeholder="Tweet to the world!" rows="5" name="tweet"></textarea>
                     <button type="submit">Post</button>
